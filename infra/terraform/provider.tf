@@ -7,6 +7,14 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    bucket         = "feedback-management-tfstate-454634138220"
+    key            = "terraform.tfstate"
+    region         = "sa-east-1"
+    dynamodb_table = "feedback-management-tfstate-locks"
+    encrypt        = true
+  }
 }
 
 provider "aws" {
