@@ -6,3 +6,12 @@ resource "aws_sns_topic" "send_notification" {
     ManagedBy   = "Terraform"
   }
 }
+
+resource "aws_sns_topic" "feedback_notification" {
+  name = "feedback-notification-topic"
+
+  tags = {
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
