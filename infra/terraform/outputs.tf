@@ -57,3 +57,8 @@ output "critical_notification_lambda_arn" {
   description = "ARN da Lambda critical-notification"
   value       = aws_lambda_function.critical_notification.arn
 }
+
+output "api_gateway_invoke_url" {
+  description = "URL base do API Gateway para envio de avaliações"
+  value       = "${aws_api_gateway_stage.dev.invoke_url}/avaliacao"
+}
