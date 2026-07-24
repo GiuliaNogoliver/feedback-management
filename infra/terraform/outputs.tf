@@ -62,3 +62,13 @@ output "api_gateway_invoke_url" {
   description = "URL base do API Gateway para envio de avaliações"
   value       = "${aws_api_gateway_stage.dev.invoke_url}/avaliacao"
 }
+
+output "eventbridge_schedule_arn" {
+  description = "ARN do agendamento EventBridge Scheduler para relatório semanal"
+  value       = aws_scheduler_schedule.generate_weekly_report.arn
+}
+
+output "eventbridge_schedule_name" {
+  description = "Nome do agendamento EventBridge Scheduler para relatório semanal"
+  value       = aws_scheduler_schedule.generate_weekly_report.name
+}
