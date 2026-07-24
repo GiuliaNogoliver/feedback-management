@@ -9,25 +9,16 @@ resource "aws_api_gateway_rest_api" "feedback_api" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Recurso: /avaliacao
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_resource" "avaliacao" {
   rest_api_id = aws_api_gateway_rest_api.feedback_api.id
   parent_id   = aws_api_gateway_rest_api.feedback_api.root_resource_id
   path_part   = "avaliacao"
 }
 
-# -----------------------------------------------------------------------------
-# Modelo de Validação (JSON Schema) para /avaliacao
-# - descricao: string obrigatória
-# - nota: integer obrigatório (0 a 10)
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_model" "avaliacao_model" {
   rest_api_id  = aws_api_gateway_rest_api.feedback_api.id
   name         = "AvaliacaoInputModel"
   content_type = "application/json"
-  description  = "Validação do payload de avaliação"
 
   schema = jsonencode({
     "$schema" = "http://json-schema.org/draft-04/schema#"
@@ -49,9 +40,6 @@ resource "aws_api_gateway_model" "avaliacao_model" {
   })
 }
 
-# -----------------------------------------------------------------------------
-# Request Validator (Valida o corpo da requisição contra o modelo)
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_request_validator" "validator" {
   name                        = "payload-body-validator"
   rest_api_id                 = aws_api_gateway_rest_api.feedback_api.id
@@ -59,9 +47,6 @@ resource "aws_api_gateway_request_validator" "validator" {
   validate_request_parameters = false
 }
 
-# -----------------------------------------------------------------------------
-# Método POST /avaliacao
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_method" "post_avaliacao" {
   rest_api_id          = aws_api_gateway_rest_api.feedback_api.id
   resource_id          = aws_api_gateway_resource.avaliacao.id
@@ -74,9 +59,6 @@ resource "aws_api_gateway_method" "post_avaliacao" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Integração AWS_PROXY com a Lambda receive-feedback
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_integration" "lambda_integration" {
   rest_api_id             = aws_api_gateway_rest_api.feedback_api.id
   resource_id             = aws_api_gateway_resource.avaliacao.id
@@ -86,9 +68,6 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   uri                     = aws_lambda_function.receive_feedback.invoke_arn
 }
 
-# -----------------------------------------------------------------------------
-# Permissão para o API Gateway invocar a Lambda receive-feedback
-# -----------------------------------------------------------------------------
 resource "aws_lambda_permission" "apigw_lambda_receive_feedback" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
@@ -97,18 +76,12 @@ resource "aws_lambda_permission" "apigw_lambda_receive_feedback" {
   source_arn    = "${aws_api_gateway_rest_api.feedback_api.execution_arn}/*/*/*"
 }
 
-# =============================================================================
-# Recurso: /relatorio
-# =============================================================================
 resource "aws_api_gateway_resource" "relatorio" {
   rest_api_id = aws_api_gateway_rest_api.feedback_api.id
   parent_id   = aws_api_gateway_rest_api.feedback_api.root_resource_id
   path_part   = "relatorio"
 }
 
-# -----------------------------------------------------------------------------
-# Método POST /relatorio
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_method" "post_relatorio" {
   rest_api_id   = aws_api_gateway_rest_api.feedback_api.id
   resource_id   = aws_api_gateway_resource.relatorio.id
@@ -116,9 +89,6 @@ resource "aws_api_gateway_method" "post_relatorio" {
   authorization = "NONE"
 }
 
-# -----------------------------------------------------------------------------
-# Integração AWS_PROXY com a Lambda generate-report
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_integration" "lambda_integration_generate_report" {
   rest_api_id             = aws_api_gateway_rest_api.feedback_api.id
   resource_id             = aws_api_gateway_resource.relatorio.id
@@ -128,9 +98,6 @@ resource "aws_api_gateway_integration" "lambda_integration_generate_report" {
   uri                     = aws_lambda_function.generate_report.invoke_arn
 }
 
-# -----------------------------------------------------------------------------
-# Permissão para o API Gateway invocar a Lambda generate-report
-# -----------------------------------------------------------------------------
 resource "aws_lambda_permission" "apigw_lambda_generate_report" {
   statement_id  = "AllowExecutionFromAPIGatewayGenerateReport"
   action        = "lambda:InvokeFunction"
@@ -139,9 +106,6 @@ resource "aws_lambda_permission" "apigw_lambda_generate_report" {
   source_arn    = "${aws_api_gateway_rest_api.feedback_api.execution_arn}/*/*/*"
 }
 
-# -----------------------------------------------------------------------------
-# Deployment & Stage
-# -----------------------------------------------------------------------------
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.feedback_api.id
 
