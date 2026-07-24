@@ -75,7 +75,7 @@ jobs:
             echo "Validações OK! Criando Pull Request para a branch $BRANCH_NAME..."
             gh pr create \
               --title "feat: $BRANCH_NAME" \
-              --body "🚀 **Pull Request gerado automaticamente pelo CI**\n\n- ✅ \`terraform validate\` passou com sucesso\n- ✅ \`terraform plan\` executado com sucesso\n\nPor favor, revise a infraestrutura e faça o merge para aplicar na AWS." \
+              --body "" \
               --base main \
               --head "$BRANCH_NAME"
           else
