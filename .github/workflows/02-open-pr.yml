@@ -1,4 +1,4 @@
-name: "CI - Terraform Validation & Auto-PR"
+name: "02 - Auto Open Pull Request"
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
       - main
 
 permissions:
-  id-token: write      # Autenticação OIDC na AWS
-  contents: read       # Leitura do repositório
-  pull-requests: write # Permissão para abrir PRs automaticamente
+  id-token: write
+  contents: read
+  pull-requests: write
 
 jobs:
-  validate-plan-and-auto-pr:
-    name: "Validate, Plan & Auto-PR"
+  auto-open-pr:
+    name: "Validate & Create PR"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,30 +39,24 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Format Check
-        run: terraform fmt -check
+      - name: Terraform Validate & Plan
+        run: |
+          terraform validate
+          terraform plan -no-color
 
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        run: terraform plan -no-color
-
-      - name: Auto-Create Pull Request if not exists
+      - name: Create Pull Request if not exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH_NAME="${{ github.ref_name }}"
-          
           PR_EXISTS=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
-          
           if [ -z "$PR_EXISTS" ]; then
             echo "Validações OK! Criando Pull Request para a branch $BRANCH_NAME..."
             gh pr create \
               --title "feat: $BRANCH_NAME" \
-              --body "🚀 **Pull Request gerado automaticamente pelo CI**\n\n- ✅ \`terraform validate\` passou com sucesso\n- ✅ \`terraform plan\` executado com sucesso\n\nPor favor, revise o plano e faça o merge para aplicar as mudanças na AWS." \
+              --body "🚀 **Pull Request gerado automaticamente**\n\n- ✅ Infraestrutura validada com sucesso pelo pipeline de CI\n\nPor favor, revise o plano e faça o merge." \
               --base main \
               --head "$BRANCH_NAME"
           else
-            echo "Pull Request #$PR_EXISTS já está aberto para a branch $BRANCH_NAME."
+            echo "Pull Request #$PR_EXISTS já existe para a branch $BRANCH_NAME."
           fi
