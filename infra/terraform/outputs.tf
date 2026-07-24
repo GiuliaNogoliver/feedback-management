@@ -37,3 +37,23 @@ output "notify_email_queue_url" {
   description = "URL da fila SQS de notificação por email"
   value       = aws_sqs_queue.notify_email.url
 }
+
+output "receive_feedback_lambda_arn" {
+  description = "ARN da Lambda receive-feedback"
+  value       = aws_lambda_function.receive_feedback.arn
+}
+
+output "send_email_lambda_arn" {
+  description = "ARN da Lambda send-email"
+  value       = aws_lambda_function.send_email.arn
+}
+
+output "generate_report_lambda_arn" {
+  description = "ARN da Lambda generate-report"
+  value       = aws_lambda_function.generate_report.arn
+}
+
+output "critical_notification_lambda_arn" {
+  description = "ARN da Lambda critical-notification"
+  value       = aws_lambda_function.critical_notification.arn
+}
