@@ -72,3 +72,8 @@ output "eventbridge_schedule_name" {
   description = "Nome do agendamento EventBridge Scheduler para relatório semanal"
   value       = aws_scheduler_schedule.generate_weekly_report.name
 }
+
+output "api_gateway_relatorio_url" {
+  description = "URL do API Gateway para geração sob demanda de relatórios"
+  value       = "${aws_api_gateway_stage.dev.invoke_url}/relatorio"
+}
