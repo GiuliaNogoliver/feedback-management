@@ -1,60 +1,40 @@
 name: "02 - Auto Open Pull Request"
 
 on:
-  push:
-    branches-ignore:
-      - main
+  workflow_run:
+    workflows: ["01 - Validate Infrastructure"]
+    types:
+      - completed
 
 permissions:
-  id-token: write
   contents: read
   pull-requests: write
 
 jobs:
   auto-open-pr:
-    name: "Validate & Create PR"
+    name: "Create PR on Validation Success"
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch != 'main' }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./infra/terraform
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Configure AWS Credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::454634138220:role/GitHubActionsDeployRole
-          aws-region: sa-east-1
-
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Validate & Plan
-        run: |
-          terraform validate
-          terraform plan -no-color
+          ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: Create Pull Request if not exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH_NAME="${{ github.ref_name }}"
+          BRANCH_NAME="${{ github.event.workflow_run.head_branch }}"
+          
           PR_EXISTS=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
+          
           if [ -z "$PR_EXISTS" ]; then
-            echo "Validações OK! Criando Pull Request para a branch $BRANCH_NAME..."
+            echo "Validações do 01-validate concluídas com SUCESSO! Criando Pull Request para $BRANCH_NAME..."
             gh pr create \
               --title "feat: $BRANCH_NAME" \
-              --body "🚀 **Pull Request gerado automaticamente**\n\n- ✅ Infraestrutura validada com sucesso pelo pipeline de CI\n\nPor favor, revise o plano e faça o merge." \
+              --body "🚀 **Pull Request gerado automaticamente pelo CI**\n\n- ✅ Validação do Terraform (01-validate) passou com sucesso!\n\nPor favor, revise a infraestrutura e faça o merge para aplicar na AWS." \
               --base main \
               --head "$BRANCH_NAME"
           else
