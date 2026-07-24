@@ -94,3 +94,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Lambda build packages
+*.zip
+infra/terraform/zip/
