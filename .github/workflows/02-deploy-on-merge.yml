@@ -1,17 +1,17 @@
-name: "01 - Validate Infrastructure"
+name: "02 - Deploy AWS (On Merge)"
 
 on:
   push:
-    branches-ignore:
+    branches:
       - main
 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # Autenticação OIDC na AWS
+  contents: read  # Leitura do repositório
 
 jobs:
-  validate:
-    name: "Terraform Validate & Plan"
+  deploy:
+    name: "Terraform Apply & Lambda Deploy"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,11 +38,5 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Format Check
-        run: terraform fmt -check
-
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        run: terraform plan -no-color
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
