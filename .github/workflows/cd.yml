@@ -1,0 +1,42 @@
+name: "CD - Terraform Apply & Lambda Deploy"
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write # Autenticação OIDC na AWS
+  contents: read  # Leitura do repositório
+
+jobs:
+  deploy-on-merge:
+    name: "Terraform Apply & Deploy AWS"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infra/terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::454634138220:role/GitHubActionsDeployRole
+          aws-region: sa-east-1
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
