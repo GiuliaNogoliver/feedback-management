@@ -27,3 +27,13 @@ output "feedbacks_gsi_name" {
   description = "Nome do Global Secondary Index (DateIndex)"
   value       = "DateIndex"
 }
+
+output "notify_email_queue_arn" {
+  description = "ARN da fila SQS de notificação por email"
+  value       = aws_sqs_queue.notify_email.arn
+}
+
+output "notify_email_queue_url" {
+  description = "URL da fila SQS de notificação por email"
+  value       = aws_sqs_queue.notify_email.url
+}
