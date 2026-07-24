@@ -8,10 +8,6 @@ output "feedback_notification_topic_arn" {
   value       = aws_sns_topic.feedback_notification.arn
 }
 
-# =============================================================================
-# DynamoDB Outputs
-# =============================================================================
-
 output "feedbacks_table_arn" {
   description = "ARN da tabela DynamoDB de feedbacks"
   value       = aws_dynamodb_table.feedbacks.arn

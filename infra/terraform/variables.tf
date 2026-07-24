@@ -1,7 +1,3 @@
-# =============================================================================
-# Variáveis parametrizáveis do projeto feedback-management
-# =============================================================================
-
 variable "table_name" {
   description = "Nome da tabela DynamoDB de feedbacks"
   type        = string
