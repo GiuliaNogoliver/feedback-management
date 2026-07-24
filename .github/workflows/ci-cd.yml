@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   # =================================================================
-  # JOB 1: Validação, Plan e Abertura Automática de PR
+  # JOB 1: Validação, Plan e Abertura Automática de PR (Qualquer branch exceto main)
   # =================================================================
   validate-and-create-pr:
     name: "Validate, Plan & Auto-PR"
@@ -52,9 +52,8 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -no-color
 
-      # Abre o PR APENAS se a branch começar com 'feature/' ou 'feat/'
-      - name: Auto-Create Pull Request (Apenas branches feature/* ou feat/*)
-        if: startsWith(github.ref_name, 'feature/') || startsWith(github.ref_name, 'feat/')
+      # Passou na validação -> Abre o PR automaticamente para qualquer branch
+      - name: Auto-Create Pull Request if not exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
