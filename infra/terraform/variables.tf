@@ -20,3 +20,9 @@ variable "aws_region" {
   type        = string
   default     = "sa-east-1"
 }
+
+variable "lambda_generate_report_arn" {
+  description = "ARN opcional da função Lambda generate-report para acoplamento externo"
+  type        = string
+  default     = ""
+}
