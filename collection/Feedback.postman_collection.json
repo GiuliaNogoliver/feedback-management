@@ -117,6 +117,80 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "GERAR RELATORIO",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"days\": 7,\n  \"urgencia\": \"ALL\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://bgkpim0eai.execute-api.sa-east-1.amazonaws.com/dev/relatorio",
+          "protocol": "https",
+          "host": [
+            "bgkpim0eai",
+            "execute-api",
+            "sa-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "dev",
+            "relatorio"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GERAR RELATORIO (30 DIAS - ALTA)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"days\": 30,\n  \"urgencia\": \"ALTA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://bgkpim0eai.execute-api.sa-east-1.amazonaws.com/dev/relatorio",
+          "protocol": "https",
+          "host": [
+            "bgkpim0eai",
+            "execute-api",
+            "sa-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "dev",
+            "relatorio"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }

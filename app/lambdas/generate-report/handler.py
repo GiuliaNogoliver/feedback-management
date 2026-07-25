@@ -17,7 +17,7 @@ sqs = boto3.client("sqs", region_name=region)
 
 
 @dataclass(frozen=True)
-class WeeklyReportSummary:
+class ReportSummary:
     media_geral: str
     total_avaliacoes: str
     avaliacoes_por_urgencia: str
@@ -31,29 +31,60 @@ class ReportGenerator:
         self.queue_url = queue_url
         self.recipient = recipient
 
-    def query_last_7_days(self) -> List[Dict[str, Any]]:
+    def query_feedbacks(self, days: int, urgencia_filter: str) -> List[Dict[str, Any]]:
         now = datetime.now(timezone.utc)
-        start_date = now - timedelta(days=7)
+        start_date = now - timedelta(days=days)
 
         data_inicio = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
         data_fim = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        logger.info("Executando Query GSI DateIndex de %s até %s", data_inicio, data_fim)
+        logger.info(
+            "Executando Query GSI DateIndex de %s até %s (Filtro Urgência: %s)",
+            data_inicio,
+            data_fim,
+            urgencia_filter,
+        )
 
         response = self.table.query(
             IndexName="DateIndex",
             KeyConditionExpression=Key("entity_type").eq("FEEDBACK") & Key("timestamp").between(data_inicio, data_fim),
         )
         items = response.get("Items", [])
-        logger.info("Encontrados %d feedbacks no período de 7 dias", len(items))
+        logger.info("Retornados %d item(ns) brutos da Query GSI", len(items))
+
+        if urgencia_filter != "ALL":
+            filtered: List[Dict[str, Any]] = []
+            for item in items:
+                urg = str(item.get("urgencia", "")).upper()
+                if urg in ("ALTA", "HIGH") and urgencia_filter == "ALTA":
+                    filtered.append(item)
+                elif urg in ("MEDIA", "MÉDIA", "MEDIUM") and urgencia_filter in ("MEDIA", "MÉDIA"):
+                    filtered.append(item)
+                elif urg in ("BAIXA", "LOW") and urgencia_filter == "BAIXA":
+                    filtered.append(item)
+                elif not urg:
+                    try:
+                        nota = float(item.get("nota", -1))
+                    except (ValueError, TypeError):
+                        nota = -1
+                    if nota >= 0:
+                        if nota <= 3 and urgencia_filter == "ALTA":
+                            filtered.append(item)
+                        elif 3 < nota <= 6 and urgencia_filter in ("MEDIA", "MÉDIA"):
+                            filtered.append(item)
+                        elif nota > 6 and urgencia_filter == "BAIXA":
+                            filtered.append(item)
+            items = filtered
+            logger.info("Após aplicar filtro 'urgencia=%s', restaram %d item(ns)", urgencia_filter, len(items))
+
         return items
 
-    def compute_summary(self, items: List[Dict[str, Any]]) -> WeeklyReportSummary:
+    def compute_summary(self, items: List[Dict[str, Any]]) -> ReportSummary:
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         total_avaliacoes = len(items)
 
         if total_avaliacoes == 0:
-            return WeeklyReportSummary(
+            return ReportSummary(
                 media_geral="0.0",
                 total_avaliacoes="0",
                 avaliacoes_por_urgencia="Alta: 0, Média: 0, Baixa: 0",
@@ -77,14 +108,15 @@ class ReportGenerator:
 
             urgencia_attr = item.get("urgencia")
             if urgencia_attr:
-                urg_str = str(urgencia_attr).capitalize()
-                if urg_str in ("Alta", "Média", "Media"):
-                    urg_key = "Média" if urg_str in ("Média", "Media") else "Alta"
-                elif urg_str == "Baixa":
-                    urg_key = "Baixa"
+                urg_str = str(urgencia_attr).upper()
+                if urg_str in ("ALTA", "HIGH"):
+                    urgencia_counts["Alta"] += 1
+                elif urg_str in ("MEDIA", "MÉDIA", "MEDIUM"):
+                    urgencia_counts["Média"] += 1
+                elif urg_str in ("BAIXA", "LOW"):
+                    urgencia_counts["Baixa"] += 1
                 else:
-                    urg_key = "Baixa"
-                urgencia_counts[urg_key] = urgencia_counts.get(urg_key, 0) + 1
+                    urgencia_counts["Baixa"] += 1
             elif nota is not None:
                 if nota <= 3:
                     urgencia_counts["Alta"] += 1
@@ -98,13 +130,11 @@ class ReportGenerator:
             dia_counts[date_part] += 1
 
         media_geral = f"{(sum(notas) / len(notas)):.1f}" if notas else "0.0"
-
         urgencia_str = f"Alta: {urgencia_counts['Alta']}, Média: {urgencia_counts['Média']}, Baixa: {urgencia_counts['Baixa']}"
-
         sorted_days = sorted(dia_counts.keys())
         dia_str = ", ".join([f"{dia}: {dia_counts[dia]}" for dia in sorted_days])
 
-        return WeeklyReportSummary(
+        return ReportSummary(
             media_geral=media_geral,
             total_avaliacoes=str(total_avaliacoes),
             avaliacoes_por_urgencia=urgencia_str,
@@ -112,11 +142,11 @@ class ReportGenerator:
             data_envio=now_str,
         )
 
-    def publish_to_sqs(self, summary: WeeklyReportSummary) -> Dict[str, Any]:
+    def publish_to_sqs(self, summary: ReportSummary, subject: str) -> Dict[str, Any]:
         payload = {
             "event_type": "WEEKLY_REPORT",
             "recipient": self.recipient,
-            "subject": "📊 Relatório Semanal de Avaliações",
+            "subject": subject,
             "data": {
                 "media_geral": summary.media_geral,
                 "total_avaliacoes": summary.total_avaliacoes,
@@ -126,7 +156,7 @@ class ReportGenerator:
             },
         }
 
-        logger.info("Publicando relatório semanal na SQS queue %s", self.queue_url)
+        logger.info("Publicando relatório na SQS queue %s (Assunto: %s)", self.queue_url, subject)
         response = sqs.send_message(
             QueueUrl=self.queue_url,
             MessageBody=json.dumps(payload),
@@ -136,25 +166,48 @@ class ReportGenerator:
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    logger.info("Iniciando geração de relatório semanal...")
+    logger.info("Iniciando execução da Lambda generate-report...")
+
+    if isinstance(event, dict) and "body" in event and event["body"]:
+        try:
+            body = json.loads(event["body"])
+            event_params = body if isinstance(body, dict) else event
+        except (json.JSONDecodeError, TypeError):
+            event_params = event
+    else:
+        event_params = event if isinstance(event, dict) else {}
+
+    try:
+        days = int(event_params.get("days", 7))
+    except (ValueError, TypeError):
+        days = 7
+
+    if days <= 0:
+        days = 7
+
+    urgencia_filter = str(event_params.get("urgencia", "ALL")).strip().upper()
+
     table_name = os.environ.get("TABLE_NAME", "feedbacks_db")
     queue_url = os.environ.get("SQS_QUEUE_URL", "")
     recipient = os.environ.get("MANAGEMENT_EMAIL", "giulianogoliver84@outlook.com")
 
+    subject = f"📊 Relatório de Avaliações ({days} dias)"
+
     generator = ReportGenerator(table_name=table_name, queue_url=queue_url, recipient=recipient)
-    items = generator.query_last_7_days()
+    items = generator.query_feedbacks(days=days, urgencia_filter=urgencia_filter)
     summary = generator.compute_summary(items)
 
     if queue_url:
-        generator.publish_to_sqs(summary)
+        generator.publish_to_sqs(summary, subject=subject)
     else:
-        logger.warning("SQS_QUEUE_URL não configurada. Mensagem não publicada na fila.")
+        logger.warning("SQS_QUEUE_URL não configurada. Mensagem não enviada para a fila.")
 
     return {
         "statusCode": 200,
         "body": json.dumps(
             {
-                "message": "Relatório semanal gerado e processado com sucesso.",
+                "message": "Relatório gerado e enviado com sucesso.",
+                "parameters": {"days": days, "urgencia": urgencia_filter},
                 "summary": {
                     "media_geral": summary.media_geral,
                     "total_avaliacoes": summary.total_avaliacoes,

@@ -57,8 +57,8 @@ resource "aws_scheduler_schedule" "generate_weekly_report" {
     role_arn = aws_iam_role.scheduler_role.arn
 
     input = jsonencode({
-      trigger_source = "EVENTBRIDGE_SCHEDULER"
-      report_type    = "WEEKLY"
+      days     = 7
+      urgencia = "ALL"
     })
   }
 }
