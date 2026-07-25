@@ -44,7 +44,7 @@ class NotificationPayload:
         )
         recipient = (
             inner_message.get("recipient")
-            or os.environ.get("SES_SOURCE_EMAIL", "noreply@feedback-platform.com")
+            or os.environ.get("SES_SOURCE_EMAIL", "giulianogoliver84@outlook.com")
         )
         data = inner_message.get("data", inner_message)
 
@@ -85,7 +85,7 @@ class EmailService:
                 exc,
             )
             return os.environ.get(
-                "SES_SOURCE_EMAIL", "noreply@feedback-platform.com"
+                "SES_SOURCE_EMAIL", "giulianogoliver84@outlook.com"
             )
 
     def send_templated_email(self, payload: NotificationPayload) -> Dict[str, Any]:

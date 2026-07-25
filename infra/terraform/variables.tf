@@ -30,5 +30,5 @@ variable "lambda_generate_report_arn" {
 variable "ses_source_email" {
   description = "E-mail remetente verificado no Amazon SES para envio de notificações"
   type        = string
-  default     = "noreply@feedback-platform.com"
+  default     = "giulianogoliver84@outlook.com"
 }
