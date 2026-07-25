@@ -32,7 +32,7 @@ class NotificationPayload:
             try:
                 inner_message = json.loads(body_json["Message"])
             except (json.JSONDecodeError, TypeError):
-                inner_message = {}
+                inner_message = body_json
         else:
             inner_message = body_json
 
@@ -42,10 +42,11 @@ class NotificationPayload:
             or inner_message.get("event_type")
             or "CRITICAL_ALERT"
         )
-        recipient = (
-            inner_message.get("recipient")
-            or os.environ.get("SES_SOURCE_EMAIL", "noreply@feedback-platform.com")
-        )
+        
+        recipient = inner_message.get("recipient")
+        if not recipient:
+            raise KeyError("O campo 'recipient' é obrigatório na mensagem SQS/SNS.")
+
         data = inner_message.get("data", inner_message)
 
         return cls(
@@ -85,7 +86,7 @@ class EmailService:
                 exc,
             )
             return os.environ.get(
-                "SES_SOURCE_EMAIL", "noreply@feedback-platform.com"
+                "SES_SOURCE_EMAIL", "giulianogoliver84@outlook.com"
             )
 
     def send_templated_email(self, payload: NotificationPayload) -> Dict[str, Any]:
