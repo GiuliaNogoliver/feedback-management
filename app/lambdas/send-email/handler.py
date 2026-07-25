@@ -17,7 +17,7 @@ TEMPLATE_MAPPING: Dict[str, str] = {
 @dataclass(frozen=True)
 class NotificationPayload:
     event_type: str
-    recipient: str
+    recipient: Any
     data: Dict[str, Any]
 
     @classmethod
@@ -32,7 +32,7 @@ class NotificationPayload:
             try:
                 inner_message = json.loads(body_json["Message"])
             except (json.JSONDecodeError, TypeError):
-                inner_message = body_json
+                inner_message = {}
         else:
             inner_message = body_json
 
@@ -42,7 +42,7 @@ class NotificationPayload:
             or inner_message.get("event_type")
             or "CRITICAL_ALERT"
         )
-        
+
         recipient = inner_message.get("recipient")
         if not recipient:
             raise KeyError("O campo 'recipient' é obrigatório na mensagem SQS/SNS.")
@@ -96,16 +96,22 @@ class EmailService:
         template_data_str = json.dumps(payload.data)
         current_sender = self.sender_email
 
+        recipient_input = payload.recipient
+        if isinstance(recipient_input, list):
+            to_addresses = [str(r).strip() for r in recipient_input if str(r).strip()]
+        else:
+            to_addresses = [r.strip() for r in str(recipient_input).split(",") if r.strip()]
+
         logger.info(
             "Enviando e-mail nativo SES via template '%s' para %s (Remetente: %s)",
             template_name,
-            payload.recipient,
+            to_addresses,
             current_sender,
         )
 
         response = self.ses_client.send_templated_email(
             Source=current_sender,
-            Destination={"ToAddresses": [payload.recipient]},
+            Destination={"ToAddresses": to_addresses},
             Template=template_name,
             TemplateData=template_data_str,
         )
