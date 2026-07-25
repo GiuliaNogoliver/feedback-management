@@ -47,6 +47,13 @@ resource "aws_lambda_function" "send_email" {
   filename         = data.archive_file.send_email.output_path
   source_code_hash = data.archive_file.send_email.output_base64sha256
 
+  environment {
+    variables = {
+      SES_SOURCE_EMAIL           = var.ses_source_email
+      SSM_PARAM_SES_SOURCE_EMAIL = aws_ssm_parameter.ses_source_email.name
+    }
+  }
+
   tags = {
     Environment = var.environment
     Project     = "feedback-management"
@@ -84,4 +91,10 @@ resource "aws_lambda_function" "critical_notification" {
     Project     = "feedback-management"
     ManagedBy   = "Terraform"
   }
+}
+
+resource "aws_lambda_event_source_mapping" "sqs_email_trigger" {
+  event_source_arn = aws_sqs_queue.notify_email.arn
+  function_name    = aws_lambda_function.send_email.arn
+  batch_size       = 5
 }

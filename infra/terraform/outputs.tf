@@ -77,3 +77,8 @@ output "api_gateway_relatorio_url" {
   description = "URL do API Gateway para geração sob demanda de relatórios"
   value       = "${aws_api_gateway_stage.dev.invoke_url}/relatorio"
 }
+
+output "ssm_parameter_ses_source_email_name" {
+  description = "Nome do parâmetro no SSM Parameter Store para o e-mail remetente"
+  value       = aws_ssm_parameter.ses_source_email.name
+}
