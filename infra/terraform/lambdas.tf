@@ -72,9 +72,10 @@ resource "aws_lambda_function" "generate_report" {
 
   environment {
     variables = {
-      TABLE_NAME       = var.table_name
-      SQS_QUEUE_URL    = aws_sqs_queue.notify_email.url
-      MANAGEMENT_EMAIL = var.ses_source_email
+      TABLE_NAME                 = var.table_name
+      SQS_QUEUE_URL              = aws_sqs_queue.notify_email.url
+      MANAGEMENT_EMAIL           = var.ses_source_email
+      SSM_PARAM_MANAGEMENT_EMAIL = aws_ssm_parameter.management_email.name
     }
   }
 

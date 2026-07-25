@@ -82,3 +82,9 @@ output "ssm_parameter_ses_source_email_name" {
   description = "Nome do parâmetro no SSM Parameter Store para o e-mail remetente"
   value       = aws_ssm_parameter.ses_source_email.name
 }
+
+output "ssm_parameter_management_email_name" {
+  description = "Nome do parâmetro no SSM Parameter Store para o e-mail de gestão"
+  value       = aws_ssm_parameter.management_email.name
+}
+

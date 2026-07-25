@@ -14,6 +14,7 @@ logger.setLevel(logging.INFO)
 region = os.environ.get("AWS_REGION", "sa-east-1")
 dynamodb = boto3.resource("dynamodb", region_name=region)
 sqs = boto3.client("sqs", region_name=region)
+ssm = boto3.client("ssm", region_name=region)
 
 
 @dataclass(frozen=True)
@@ -26,10 +27,31 @@ class ReportSummary:
 
 
 class ReportGenerator:
-    def __init__(self, table_name: str, queue_url: str, recipient: str) -> None:
+    def __init__(self, table_name: str, queue_url: str, ssm_param_name: str) -> None:
         self.table = dynamodb.Table(table_name)
         self.queue_url = queue_url
-        self.recipient = recipient
+        self.ssm_param_name = ssm_param_name
+
+    @property
+    def recipient(self) -> str:
+        try:
+            response = ssm.get_parameter(
+                Name=self.ssm_param_name, WithDecryption=False
+            )
+            email_val = response["Parameter"]["Value"]
+            logger.info(
+                "E-mail de gestão obtido com sucesso do SSM Parameter Store (%s): %s",
+                self.ssm_param_name,
+                email_val,
+            )
+            return email_val
+        except Exception as exc:
+            logger.warning(
+                "Falha ao buscar parâmetro no SSM Parameter Store (%s): %s. Usando fallback.",
+                self.ssm_param_name,
+                exc,
+            )
+            return os.environ.get("MANAGEMENT_EMAIL", "giulianogoliver84@outlook.com")
 
     def query_feedbacks(self, days: int, urgencia_filter: str) -> List[Dict[str, Any]]:
         now = datetime.now(timezone.utc)
@@ -156,7 +178,7 @@ class ReportGenerator:
             },
         }
 
-        logger.info("Publicando relatório na SQS queue %s (Assunto: %s)", self.queue_url, subject)
+        logger.info("Publicando relatório na SQS queue %s (Remetente: %s | Assunto: %s)", self.queue_url, payload["recipient"], subject)
         response = sqs.send_message(
             QueueUrl=self.queue_url,
             MessageBody=json.dumps(payload),
@@ -189,11 +211,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     table_name = os.environ.get("TABLE_NAME", "feedbacks_db")
     queue_url = os.environ.get("SQS_QUEUE_URL", "")
-    recipient = os.environ.get("MANAGEMENT_EMAIL", "giulianogoliver84@outlook.com")
+    ssm_param_name = os.environ.get(
+        "SSM_PARAM_MANAGEMENT_EMAIL",
+        "/feedback-management/dev/management_email",
+    )
 
     subject = f"📊 Relatório de Avaliações ({days} dias)"
 
-    generator = ReportGenerator(table_name=table_name, queue_url=queue_url, recipient=recipient)
+    generator = ReportGenerator(table_name=table_name, queue_url=queue_url, ssm_param_name=ssm_param_name)
     items = generator.query_feedbacks(days=days, urgencia_filter=urgencia_filter)
     summary = generator.compute_summary(items)
 

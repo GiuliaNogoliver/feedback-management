@@ -55,7 +55,10 @@ resource "aws_iam_role_policy" "lambda_sqs_ses_policy" {
         Action = [
           "ssm:GetParameter"
         ]
-        Resource = aws_ssm_parameter.ses_source_email.arn
+        Resource = [
+          aws_ssm_parameter.ses_source_email.arn,
+          aws_ssm_parameter.management_email.arn
+        ]
       },
       {
         Effect = "Allow"
