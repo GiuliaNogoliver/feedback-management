@@ -77,7 +77,7 @@ jobs:
               --title "feat: $BRANCH_NAME" \
               --body "" \
               --base main \
-              --head "$BRANCH_NAME"
+              --head "$BRANCH_NAME" || echo "Aviso: Não foi possível criar o PR automático (a branch pode estar zerada em relação à main ou o PR foi criado manualmente)."
           else
             echo "Pull Request #$PR_EXISTS já está aberto para a branch $BRANCH_NAME."
           fi
