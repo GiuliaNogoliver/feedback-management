@@ -49,7 +49,8 @@ resource "aws_lambda_function" "send_email" {
 
   environment {
     variables = {
-      SES_SOURCE_EMAIL = var.ses_source_email
+      SES_SOURCE_EMAIL           = var.ses_source_email
+      SSM_PARAM_SES_SOURCE_EMAIL = aws_ssm_parameter.ses_source_email.name
     }
   }
 
