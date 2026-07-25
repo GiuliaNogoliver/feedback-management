@@ -13,13 +13,13 @@ resource "aws_dynamodb_table" "feedbacks" {
 
   global_secondary_index {
     name            = "DateIndex"
-    hash_key        = "data_criacao"
+    hash_key        = "entity_type"
     range_key       = "timestamp"
     projection_type = "ALL"
   }
 
   attribute {
-    name = "data_criacao"
+    name = "entity_type"
     type = "S"
   }
 

@@ -36,7 +36,8 @@ resource "aws_iam_role_policy" "lambda_sqs_ses_policy" {
         Action = [
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
+          "sqs:GetQueueAttributes",
+          "sqs:SendMessage"
         ]
         Resource = aws_sqs_queue.notify_email.arn
       },
@@ -55,6 +56,19 @@ resource "aws_iam_role_policy" "lambda_sqs_ses_policy" {
           "ssm:GetParameter"
         ]
         Resource = aws_ssm_parameter.ses_source_email.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:GetItem",
+          "dynamodb:PutItem"
+        ]
+        Resource = [
+          aws_dynamodb_table.feedbacks.arn,
+          "${aws_dynamodb_table.feedbacks.arn}/index/*"
+        ]
       }
     ]
   })
