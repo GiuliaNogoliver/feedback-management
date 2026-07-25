@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import boto3
 
 logger = logging.getLogger()
@@ -64,47 +64,46 @@ class EmailService:
             "SSM_PARAM_SES_SOURCE_EMAIL",
             "/feedback-management/dev/ses_source_email",
         )
-        self._cached_sender_email: Optional[str] = None
 
     @property
     def sender_email(self) -> str:
-        if not self._cached_sender_email:
-            try:
-                response = self.ssm_client.get_parameter(
-                    Name=self.ssm_param_name, WithDecryption=False
-                )
-                self._cached_sender_email = response["Parameter"]["Value"]
-                logger.info(
-                    "E-mail remetente obtido com sucesso do SSM Parameter Store (%s): %s",
-                    self.ssm_param_name,
-                    self._cached_sender_email,
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Falha ao buscar parâmetro no SSM Parameter Store (%s): %s. Usando fallback.",
-                    self.ssm_param_name,
-                    exc,
-                )
-                self._cached_sender_email = os.environ.get(
-                    "SES_SOURCE_EMAIL", "noreply@feedback-platform.com"
-                )
-        return self._cached_sender_email
+        try:
+            response = self.ssm_client.get_parameter(
+                Name=self.ssm_param_name, WithDecryption=False
+            )
+            sender = response["Parameter"]["Value"]
+            logger.info(
+                "E-mail remetente obtido do SSM Parameter Store (%s): %s",
+                self.ssm_param_name,
+                sender,
+            )
+            return sender
+        except Exception as exc:
+            logger.warning(
+                "Falha ao buscar parâmetro no SSM Parameter Store (%s): %s. Usando fallback.",
+                self.ssm_param_name,
+                exc,
+            )
+            return os.environ.get(
+                "SES_SOURCE_EMAIL", "noreply@feedback-platform.com"
+            )
 
     def send_templated_email(self, payload: NotificationPayload) -> Dict[str, Any]:
         template_name = TEMPLATE_MAPPING.get(
             payload.event_type.upper(), "CriticalAlertTemplate"
         )
         template_data_str = json.dumps(payload.data)
+        current_sender = self.sender_email
 
         logger.info(
             "Enviando e-mail nativo SES via template '%s' para %s (Remetente: %s)",
             template_name,
             payload.recipient,
-            self.sender_email,
+            current_sender,
         )
 
         response = self.ses_client.send_templated_email(
-            Source=self.sender_email,
+            Source=current_sender,
             Destination={"ToAddresses": [payload.recipient]},
             Template=template_name,
             TemplateData=template_data_str,
