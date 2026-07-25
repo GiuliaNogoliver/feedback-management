@@ -44,10 +44,12 @@ resource "aws_iam_role_policy" "lambda_sqs_ses_policy" {
         Effect = "Allow"
         Action = [
           "ses:SendEmail",
-          "ses:SendRawEmail"
+          "ses:SendRawEmail",
+          "ses:SendTemplatedEmail"
         ]
         Resource = "*"
       }
     ]
   })
 }
+

@@ -85,7 +85,7 @@ class EmailService:
 email_service = EmailService()
 
 
-def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     records = event.get("Records", [])
     logger.info("Processando lote de mensagens SQS: %d registro(s)", len(records))
     processed_count = 0
@@ -109,4 +109,4 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     }
 
 
-lambda_handler = handler
+handler = lambda_handler
