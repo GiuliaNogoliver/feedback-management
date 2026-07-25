@@ -77,3 +77,13 @@ output "api_gateway_relatorio_url" {
   description = "URL do API Gateway para geração sob demanda de relatórios"
   value       = "${aws_api_gateway_stage.dev.invoke_url}/relatorio"
 }
+
+output "send_email_dispatcher_lambda_arn" {
+  description = "ARN da função Lambda send_email_dispatcher"
+  value       = aws_lambda_function.send_email_dispatcher.arn
+}
+
+output "send_email_dispatcher_lambda_name" {
+  description = "Nome da função Lambda send_email_dispatcher"
+  value       = aws_lambda_function.send_email_dispatcher.function_name
+}
