@@ -66,15 +66,27 @@ resource "aws_lambda_function" "generate_report" {
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "handler.handler"
   runtime          = "python3.12"
-  timeout          = 30
+  timeout          = 60
   filename         = data.archive_file.generate_report.output_path
   source_code_hash = data.archive_file.generate_report.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME       = var.table_name
+      SQS_QUEUE_URL    = aws_sqs_queue.notify_email.url
+      MANAGEMENT_EMAIL = var.ses_source_email
+    }
+  }
 
   tags = {
     Environment = var.environment
     Project     = "feedback-management"
     ManagedBy   = "Terraform"
   }
+
+  depends_on = [
+    aws_cloudwatch_log_group.generate_report_logs
+  ]
 }
 
 resource "aws_lambda_function" "critical_notification" {

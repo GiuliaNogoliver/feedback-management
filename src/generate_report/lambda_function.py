@@ -135,7 +135,7 @@ class ReportGenerator:
         return response
 
 
-def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     logger.info("Iniciando geração de relatório semanal...")
     table_name = os.environ.get("TABLE_NAME", "feedbacks_db")
     queue_url = os.environ.get("SQS_QUEUE_URL", "")
@@ -167,4 +167,4 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     }
 
 
-lambda_handler = handler
+handler = lambda_handler
