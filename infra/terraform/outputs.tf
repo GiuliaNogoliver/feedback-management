@@ -88,3 +88,10 @@ output "ssm_parameter_management_email_name" {
   value       = aws_ssm_parameter.management_email.name
 }
 
+output "student_api_key_value" {
+  description = "Valor da API Key exigida para autenticação no POST /avaliacao"
+  value       = aws_api_gateway_api_key.student_api_key.value
+  sensitive   = true
+}
+
+

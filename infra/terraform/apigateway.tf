@@ -52,6 +52,7 @@ resource "aws_api_gateway_method" "post_avaliacao" {
   resource_id          = aws_api_gateway_resource.avaliacao.id
   http_method          = "POST"
   authorization        = "NONE"
+  api_key_required     = true
   request_validator_id = aws_api_gateway_request_validator.validator.id
 
   request_models = {
