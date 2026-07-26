@@ -53,9 +53,9 @@ output "generate_report_lambda_arn" {
   value       = aws_lambda_function.generate_report.arn
 }
 
-output "critical_notification_lambda_arn" {
-  description = "ARN da Lambda critical-notification"
-  value       = aws_lambda_function.critical_notification.arn
+output "evaluate_urgency_lambda_arn" {
+  description = "ARN da Lambda evaluate-urgency"
+  value       = aws_lambda_function.evaluate_urgency.arn
 }
 
 output "api_gateway_invoke_url" {
@@ -88,10 +88,13 @@ output "ssm_parameter_management_email_name" {
   value       = aws_ssm_parameter.management_email.name
 }
 
+output "ssm_parameter_urgency_thresholds_arn" {
+  description = "ARN do parâmetro no SSM Parameter Store para as regras de urgência"
+  value       = aws_ssm_parameter.urgency_thresholds.arn
+}
+
 output "student_api_key_value" {
   description = "Valor da API Key exigida para autenticação no POST /avaliacao"
   value       = aws_api_gateway_api_key.student_api_key.value
   sensitive   = true
 }
-
-
