@@ -188,10 +188,11 @@ resource "aws_lambda_function" "evaluate_urgency" {
 
   environment {
     variables = {
-      TABLE_NAME     = var.table_name
-      SQS_QUEUE_URL  = aws_sqs_queue.notify_email.url
-      ADMIN_EMAIL    = var.ses_source_email
-      SSM_PARAM_NAME = aws_ssm_parameter.urgency_thresholds.name
+      TABLE_NAME                 = var.table_name
+      SQS_QUEUE_URL              = aws_sqs_queue.notify_email.url
+      ADMIN_EMAIL                = var.ses_source_email
+      SSM_PARAM_MANAGEMENT_EMAIL = aws_ssm_parameter.management_email.name
+      SSM_PARAM_NAME             = aws_ssm_parameter.urgency_thresholds.name
     }
   }
 

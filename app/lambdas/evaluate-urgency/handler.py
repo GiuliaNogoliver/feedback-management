@@ -22,11 +22,26 @@ class UrgencyThresholdConfig:
 
 
 class UrgencyEvaluatorService:
-    def __init__(self, table_name: str, queue_url: str, admin_email: str, ssm_param_name: str) -> None:
+    def __init__(self, table_name: str, queue_url: str, default_admin_email: str, ssm_param_name: str) -> None:
         self.table = dynamodb.Table(table_name)
         self.queue_url = queue_url
-        self.admin_email = admin_email
+        self.default_admin_email = default_admin_email
         self.ssm_param_name = ssm_param_name
+
+    @property
+    def admin_email(self) -> str:
+        ssm_param = os.environ.get(
+            "SSM_PARAM_MANAGEMENT_EMAIL",
+            "/feedback-management/dev/management_email",
+        )
+        try:
+            response = ssm.get_parameter(Name=ssm_param, WithDecryption=False)
+            email_val = response["Parameter"]["Value"]
+            logger.info("E-mail do administrador obtido dinamicamente do SSM (%s): %s", ssm_param, email_val)
+            return email_val
+        except Exception as exc:
+            logger.warning("Falha ao buscar e-mail no SSM (%s): %s. Usando fallback.", ssm_param, exc)
+            return self.default_admin_email
 
     @property
     def config(self) -> UrgencyThresholdConfig:
@@ -84,9 +99,10 @@ class UrgencyEvaluatorService:
                 raise exc
 
     def send_critical_sqs_alert(self, item_id: str, nota: float, descricao: str, timestamp: str) -> Optional[Dict[str, Any]]:
+        recipient = self.admin_email
         payload = {
             "event_type": "CRITICAL_ALERT",
-            "recipient": self.admin_email,
+            "recipient": recipient,
             "subject": "⚠️ ALERTA: Avaliação Crítica Recebida",
             "data": {
                 "feedback_id": item_id,
@@ -97,7 +113,7 @@ class UrgencyEvaluatorService:
             },
         }
 
-        logger.info("Publicando alerta crítico para SQS queue %s (ID: %s)", self.queue_url, item_id)
+        logger.info("Publicando alerta crítico para SQS queue %s (Destinatário: %s, ID: %s)", self.queue_url, recipient, item_id)
         response = sqs.send_message(
             QueueUrl=self.queue_url,
             MessageBody=json.dumps(payload),
@@ -113,13 +129,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     table_name = os.environ.get("TABLE_NAME", "feedbacks_db")
     queue_url = os.environ.get("SQS_QUEUE_URL", "")
-    admin_email = os.environ.get("ADMIN_EMAIL", "guilherme.rosario@outlook.com.br")
+    default_admin_email = os.environ.get("ADMIN_EMAIL", "guilherme.rosario@outlook.com.br")
     ssm_param_name = os.environ.get("SSM_PARAM_NAME", "/config/urgency_thresholds")
 
     evaluator = UrgencyEvaluatorService(
         table_name=table_name,
         queue_url=queue_url,
-        admin_email=admin_email,
+        default_admin_email=default_admin_email,
         ssm_param_name=ssm_param_name,
     )
 
