@@ -27,15 +27,25 @@ resource "aws_lambda_function" "receive_feedback" {
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "handler.handler"
   runtime          = "python3.12"
-  timeout          = 30
+  timeout          = 10
   filename         = data.archive_file.receive_feedback.output_path
   source_code_hash = data.archive_file.receive_feedback.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME = var.table_name
+    }
+  }
 
   tags = {
     Environment = var.environment
     Project     = "feedback-management"
     ManagedBy   = "Terraform"
   }
+
+  depends_on = [
+    aws_cloudwatch_log_group.receive_feedback_logs
+  ]
 }
 
 resource "aws_lambda_function" "send_email" {
