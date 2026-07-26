@@ -27,35 +27,32 @@ class UrgencyEvaluatorService:
         self.queue_url = queue_url
         self.admin_email = admin_email
         self.ssm_param_name = ssm_param_name
-        self._cached_config: Optional[UrgencyThresholdConfig] = None
 
     @property
     def config(self) -> UrgencyThresholdConfig:
-        if self._cached_config is None:
-            try:
-                response = ssm.get_parameter(Name=self.ssm_param_name, WithDecryption=False)
-                param_value = response["Parameter"]["Value"]
-                data = json.loads(param_value)
-                critical_max = int(data.get("critical_max_score", 4))
-                medium_max = int(data.get("medium_max_score", 7))
-                self._cached_config = UrgencyThresholdConfig(
-                    critical_max_score=critical_max,
-                    medium_max_score=medium_max,
-                )
-                logger.info(
-                    "Configuração de urgência carregada do SSM (%s): critical_max=%d, medium_max=%d",
-                    self.ssm_param_name,
-                    critical_max,
-                    medium_max,
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Falha ao buscar parâmetros de urgência do SSM (%s): %s. Usando fallback.",
-                    self.ssm_param_name,
-                    exc,
-                )
-                self._cached_config = UrgencyThresholdConfig()
-        return self._cached_config
+        try:
+            response = ssm.get_parameter(Name=self.ssm_param_name, WithDecryption=False)
+            param_value = response["Parameter"]["Value"]
+            data = json.loads(param_value)
+            critical_max = int(data.get("critical_max_score", 4))
+            medium_max = int(data.get("medium_max_score", 7))
+            logger.info(
+                "Configuração de urgência obtida do SSM (%s): critical_max=%d, medium_max=%d",
+                self.ssm_param_name,
+                critical_max,
+                medium_max,
+            )
+            return UrgencyThresholdConfig(
+                critical_max_score=critical_max,
+                medium_max_score=medium_max,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Falha ao buscar parâmetros de urgência do SSM (%s): %s. Usando fallback.",
+                self.ssm_param_name,
+                exc,
+            )
+            return UrgencyThresholdConfig()
 
     def calculate_urgency(self, nota: float) -> str:
         cfg = self.config
