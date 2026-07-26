@@ -57,7 +57,8 @@ resource "aws_iam_role_policy" "lambda_sqs_ses_policy" {
         ]
         Resource = [
           aws_ssm_parameter.ses_source_email.arn,
-          aws_ssm_parameter.management_email.arn
+          aws_ssm_parameter.management_email.arn,
+          aws_ssm_parameter.urgency_thresholds.arn
         ]
       },
       {
@@ -66,11 +67,24 @@ resource "aws_iam_role_policy" "lambda_sqs_ses_policy" {
           "dynamodb:Query",
           "dynamodb:Scan",
           "dynamodb:GetItem",
-          "dynamodb:PutItem"
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem"
         ]
         Resource = [
           aws_dynamodb_table.feedbacks.arn,
           "${aws_dynamodb_table.feedbacks.arn}/index/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetRecords",
+          "dynamodb:GetShardIterator",
+          "dynamodb:DescribeStream",
+          "dynamodb:ListStreams"
+        ]
+        Resource = [
+          aws_dynamodb_table.feedbacks.stream_arn
         ]
       }
     ]
