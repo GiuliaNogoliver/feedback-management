@@ -184,16 +184,21 @@ resource "aws_api_gateway_usage_plan" "student_usage_plan" {
     stage  = aws_api_gateway_stage.dev.stage_name
 
     throttle {
-      path        = "avaliacao/POST"
+      path        = "/avaliacao/POST"
       burst_limit = 20
       rate_limit  = 10
     }
 
     throttle {
-      path        = "relatorio/POST"
+      path        = "/relatorio/POST"
       burst_limit = 0
       rate_limit  = 0
     }
+  }
+
+  throttle_settings {
+    burst_limit = 20
+    rate_limit  = 10
   }
 
   quota_settings {
@@ -223,16 +228,21 @@ resource "aws_api_gateway_usage_plan" "admin_usage_plan" {
     stage  = aws_api_gateway_stage.dev.stage_name
 
     throttle {
-      path        = "avaliacao/POST"
+      path        = "/avaliacao/POST"
       burst_limit = 50
       rate_limit  = 20
     }
 
     throttle {
-      path        = "relatorio/POST"
+      path        = "/relatorio/POST"
       burst_limit = 50
       rate_limit  = 20
     }
+  }
+
+  throttle_settings {
+    burst_limit = 50
+    rate_limit  = 20
   }
 
   quota_settings {
