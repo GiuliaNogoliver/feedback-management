@@ -102,3 +102,8 @@ output "admin_api_key_value" {
   description = "Valor da API Key gerada para administradores no POST /relatorio"
   value       = nonsensitive(aws_api_gateway_api_key.admin_api_key.value)
 }
+
+output "cloudwatch_business_dashboard_name" {
+  description = "Nome do Dashboard Personalizado de Negocio no CloudWatch"
+  value       = aws_cloudwatch_dashboard.business_dashboard.dashboard_name
+}
