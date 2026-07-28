@@ -94,7 +94,11 @@ output "ssm_parameter_urgency_thresholds_arn" {
 }
 
 output "student_api_key_value" {
-  description = "Valor da API Key exigida para autenticação no POST /avaliacao"
-  value       = aws_api_gateway_api_key.student_api_key.value
-  sensitive   = true
+  description = "Valor da API Key gerada para alunos no POST /avaliacao"
+  value       = nonsensitive(aws_api_gateway_api_key.student_api_key.value)
+}
+
+output "admin_api_key_value" {
+  description = "Valor da API Key gerada para administradores no POST /relatorio"
+  value       = nonsensitive(aws_api_gateway_api_key.admin_api_key.value)
 }
