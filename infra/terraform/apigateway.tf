@@ -84,10 +84,11 @@ resource "aws_api_gateway_resource" "relatorio" {
 }
 
 resource "aws_api_gateway_method" "post_relatorio" {
-  rest_api_id   = aws_api_gateway_rest_api.feedback_api.id
-  resource_id   = aws_api_gateway_resource.relatorio.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.feedback_api.id
+  resource_id      = aws_api_gateway_resource.relatorio.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "lambda_integration_generate_report" {
@@ -136,4 +137,118 @@ resource "aws_api_gateway_stage" "dev" {
   deployment_id = aws_api_gateway_deployment.deployment.id
   rest_api_id   = aws_api_gateway_rest_api.feedback_api.id
   stage_name    = var.environment
+}
+
+resource "random_password" "student_api_key" {
+  length  = 32
+  special = false
+}
+
+resource "random_password" "admin_api_key" {
+  length  = 32
+  special = false
+}
+
+resource "aws_api_gateway_api_key" "student_api_key" {
+  name        = "StudentAPIKey"
+  description = "API Key para alunos enviarem feedbacks no POST /avaliacao"
+  value       = random_password.student_api_key.result
+  enabled     = true
+
+  tags = {
+    Environment = var.environment
+    Project     = "feedback-management"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_api_gateway_api_key" "admin_api_key" {
+  name        = "AdminAPIKey"
+  description = "API Key para administradores gerarem relatorios no POST /relatorio"
+  value       = random_password.admin_api_key.result
+  enabled     = true
+
+  tags = {
+    Environment = var.environment
+    Project     = "feedback-management"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_api_gateway_usage_plan" "student_usage_plan" {
+  name        = "StudentUsagePlan"
+  description = "Plano de uso para alunos - acesso exclusivo ao POST /avaliacao"
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.feedback_api.id
+    stage  = aws_api_gateway_stage.dev.stage_name
+
+    throttle {
+      path        = "avaliacao/POST"
+      burst_limit = 20
+      rate_limit  = 10
+    }
+
+    throttle {
+      path        = "relatorio/POST"
+      burst_limit = 0
+      rate_limit  = 0
+    }
+  }
+
+  quota_settings {
+    limit  = 10000
+    period = "MONTH"
+  }
+
+  tags = {
+    Environment = var.environment
+    Project     = "feedback-management"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_api_gateway_usage_plan_key" "student_usage_plan_key" {
+  key_id        = aws_api_gateway_api_key.student_api_key.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.student_usage_plan.id
+}
+
+resource "aws_api_gateway_usage_plan" "admin_usage_plan" {
+  name        = "AdminUsagePlan"
+  description = "Plano de uso para administradores - acesso ao POST /relatorio e POST /avaliacao"
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.feedback_api.id
+    stage  = aws_api_gateway_stage.dev.stage_name
+
+    throttle {
+      path        = "avaliacao/POST"
+      burst_limit = 50
+      rate_limit  = 20
+    }
+
+    throttle {
+      path        = "relatorio/POST"
+      burst_limit = 50
+      rate_limit  = 20
+    }
+  }
+
+  quota_settings {
+    limit  = 50000
+    period = "MONTH"
+  }
+
+  tags = {
+    Environment = var.environment
+    Project     = "feedback-management"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_api_gateway_usage_plan_key" "admin_usage_plan_key" {
+  key_id        = aws_api_gateway_api_key.admin_api_key.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.admin_usage_plan.id
 }
