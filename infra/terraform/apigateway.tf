@@ -113,18 +113,23 @@ resource "aws_api_gateway_deployment" "deployment" {
 
   depends_on = [
     aws_api_gateway_integration.lambda_integration,
-    aws_api_gateway_integration.lambda_integration_generate_report
+    aws_api_gateway_integration.lambda_integration_generate_report,
+    aws_api_gateway_method.post_avaliacao,
+    aws_api_gateway_method.post_relatorio
   ]
 
   triggers = {
     redeployment = sha256(jsonencode([
       aws_api_gateway_resource.avaliacao.id,
       aws_api_gateway_method.post_avaliacao.id,
+      aws_api_gateway_method.post_avaliacao.api_key_required,
       aws_api_gateway_integration.lambda_integration.id,
       aws_api_gateway_model.avaliacao_model.schema,
       aws_api_gateway_resource.relatorio.id,
       aws_api_gateway_method.post_relatorio.id,
-      aws_api_gateway_integration.lambda_integration_generate_report.id
+      aws_api_gateway_method.post_relatorio.api_key_required,
+      aws_api_gateway_integration.lambda_integration_generate_report.id,
+      timestamp()
     ]))
   }
 
