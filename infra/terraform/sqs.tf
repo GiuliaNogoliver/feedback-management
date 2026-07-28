@@ -1,8 +1,24 @@
+resource "aws_sqs_queue" "notify_email_dlq" {
+  name                      = "notify-email-queue-dlq"
+  message_retention_seconds = 1209600
+
+  tags = {
+    Environment = var.environment
+    Project     = "feedback-management"
+    ManagedBy   = "Terraform"
+  }
+}
+
 resource "aws_sqs_queue" "notify_email" {
   name                       = "notify-email-queue"
   visibility_timeout_seconds = 30
   message_retention_seconds  = 86400
   receive_wait_time_seconds  = 10
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.notify_email_dlq.arn
+    maxReceiveCount     = 3
+  })
 
   tags = {
     Environment = var.environment

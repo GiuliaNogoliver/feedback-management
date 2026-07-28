@@ -138,10 +138,71 @@ resource "aws_api_gateway_deployment" "deployment" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "apigateway_access_logs" {
+  name              = "/aws/api-gateway/feedback-api"
+  retention_in_days = 7
+
+  tags = {
+    Environment = var.environment
+    Project     = "feedback-management"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_iam_role" "apigateway_cloudwatch_role" {
+  name = "feedback-apigateway-cloudwatch-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "apigateway.amazonaws.com" }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Environment = var.environment
+    Project     = "feedback-management"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "apigateway_cloudwatch_attach" {
+  role       = aws_iam_role.apigateway_cloudwatch_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+resource "aws_api_gateway_account" "account" {
+  cloudwatch_role_arn = aws_iam_role.apigateway_cloudwatch_role.arn
+}
+
 resource "aws_api_gateway_stage" "dev" {
   deployment_id = aws_api_gateway_deployment.deployment.id
   rest_api_id   = aws_api_gateway_rest_api.feedback_api.id
   stage_name    = var.environment
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.apigateway_access_logs.arn
+    format = jsonencode({
+      requestId      = "$context.requestId"
+      ip             = "$context.identity.sourceIp"
+      caller         = "$context.identity.caller"
+      user           = "$context.identity.user"
+      requestTime    = "$context.requestTime"
+      httpMethod     = "$context.httpMethod"
+      resourcePath   = "$context.resourcePath"
+      status         = "$context.status"
+      protocol       = "$context.protocol"
+      responseLength = "$context.responseLength"
+    })
+  }
+
+  depends_on = [
+    aws_api_gateway_account.account
+  ]
 }
 
 resource "random_password" "student_api_key" {

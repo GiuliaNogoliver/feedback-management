@@ -59,7 +59,7 @@ resource "aws_cloudwatch_log_group" "evaluate_urgency_logs" {
 
 resource "aws_lambda_function" "receive_feedback" {
   function_name    = "receive-feedback"
-  role             = aws_iam_role.lambda_execution_role.arn
+  role             = aws_iam_role.receive_feedback_role.arn
   handler          = "handler.handler"
   runtime          = "python3.12"
   timeout          = 10
@@ -85,7 +85,7 @@ resource "aws_lambda_function" "receive_feedback" {
 
 resource "aws_lambda_function" "send_email" {
   function_name    = "send-email"
-  role             = aws_iam_role.lambda_execution_role.arn
+  role             = aws_iam_role.send_email_role.arn
   handler          = "handler.handler"
   runtime          = "python3.12"
   timeout          = 30
@@ -112,7 +112,7 @@ resource "aws_lambda_function" "send_email" {
 
 resource "aws_lambda_function" "generate_report" {
   function_name    = "generate-report"
-  role             = aws_iam_role.lambda_execution_role.arn
+  role             = aws_iam_role.generate_report_role.arn
   handler          = "handler.handler"
   runtime          = "python3.12"
   timeout          = 60
@@ -141,7 +141,7 @@ resource "aws_lambda_function" "generate_report" {
 
 resource "aws_lambda_function" "evaluate_urgency" {
   function_name    = "evaluate-urgency"
-  role             = aws_iam_role.lambda_execution_role.arn
+  role             = aws_iam_role.evaluate_urgency_role.arn
   handler          = "handler.handler"
   runtime          = "python3.12"
   timeout          = 30
