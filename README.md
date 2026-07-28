@@ -15,15 +15,18 @@ Toda a infraestrutura é provisionada via **Terraform** como Código (IaC), util
 
 ```mermaid
 graph TD
-    User["👤 Aluno / Cliente"] -->|POST /avaliacao| APIGW["🌐 AWS API Gateway"]
-    Admin["👨‍💼 Admin / Gestão"] -->|POST /relatorio| APIGW
+    subgraph Triggers & Entrypoints
+        User["👤 Aluno / Cliente"] -->|POST /avaliacao| APIGW["🌐 AWS API Gateway"]
+        Admin["👨‍💼 Admin / Gestão"] -->|POST /relatorio| APIGW
+        EventBridge["⏱️ EventBridge Scheduler"] -->|Agendamento Cron Semanal| LambdaReport["⚡ Lambda: generate-report"]
+    end
 
     subgraph API Gateway & Security
         APIGW -->|API Key + Usage Plan| APIGW_Val["Validar Payload & Rate Limits"]
     end
 
-    APIGW_Val -->|Ingestão| LambdaReceive["⚡ Lambda: receive-feedback"]
-    APIGW_Val -->|Relatório Sob Demanda| LambdaReport["⚡ Lambda: generate-report"]
+    APIGW_Val -->|Ingestão de Feedback| LambdaReceive["⚡ Lambda: receive-feedback"]
+    APIGW_Val -->|Relatório Sob Demanda| LambdaReport
 
     subgraph Storage & Event Streams
         LambdaReceive -->|PutItem| DynamoDB[("🗄️ DynamoDB: feedbacks_db")]
@@ -35,7 +38,6 @@ graph TD
         LambdaUrgency -->|Alerta Crítico (nota <= 4)| SQS["📩 SQS: notify-email-queue"]
         LambdaReport -->|Geração de Relatório| SQS
         SQS -->|Redrive Policy| DLQ["📬 SQS DLQ: notify-email-queue-dlq"]
-        EventBridge["⏱️ EventBridge Scheduler (Semanal)"] -->|Trigger Cron| LambdaReport
     end
 
     subgraph Notifications & Templates
