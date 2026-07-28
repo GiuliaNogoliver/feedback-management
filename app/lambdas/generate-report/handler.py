@@ -227,6 +227,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     else:
         logger.warning("SQS_QUEUE_URL não configurada. Mensagem não enviada para a fila.")
 
+    logger.info("Relatório gerado e enviado com sucesso.")
+
     return {
         "statusCode": 200,
         "body": json.dumps(

@@ -104,6 +104,10 @@ resource "aws_lambda_function" "send_email" {
     Project     = "feedback-management"
     ManagedBy   = "Terraform"
   }
+
+  depends_on = [
+    aws_cloudwatch_log_group.send_email_logs
+  ]
 }
 
 resource "aws_lambda_function" "generate_report" {
